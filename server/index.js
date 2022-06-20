@@ -81,6 +81,10 @@ wss.on('connection', function connection(ws) {
                 break;
         }
     });
+    
+    ws.addEventListener('close', (event) => {
+        console.log("target closed connection");
+    })
 });
 
 /*
@@ -94,6 +98,7 @@ wss.on('connection', function connection(ws) {
         viewers: {[_ultron.id]} - people viewing the game
     }
 */
+
 server.listen(port, function() {
     console.log("Web Socket Server started on port " + port);
 });
