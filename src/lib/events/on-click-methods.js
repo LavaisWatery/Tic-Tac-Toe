@@ -22,11 +22,17 @@ function onJoin(event, webSocket) {
     send(webSocket, "room.join", { roomID: event.roomID})
 }
 
+function onSquareSelected(event, webSocket) {
+    send(webSocket, "room.squareselected");
+    console.log("test");
+}
+
 const onClickMethods = {
     onSignIn,
     onSignOut,
     onCreate,
-    onJoin
+    onJoin,
+    onSquareSelected,
 };
 
 export default onClickMethods;

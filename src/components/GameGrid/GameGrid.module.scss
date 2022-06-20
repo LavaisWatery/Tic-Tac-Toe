@@ -1,0 +1,33 @@
+.square {
+  background: #fff;
+  border: 1px solid #999;
+  float: left;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 34px;
+  margin-right: -1px;
+  margin-top: -1px;
+  padding: 0;
+  text-align: center;
+  width: 70px;
+  height: 70px;
+}
+
+.squareText {
+  font-size: 2rem;
+  line-height: 3rem;
+  font-weight: 600;
+  display: grid;
+  place-items: center center;
+  height: 4rem;
+  width: 4rem;
+  border: 2px solid var(--accent-2);
+}
+
+.row {
+  display: grid;
+  place-items: center center;
+  margin: auto;
+  gap: 0.25rem;
+  grid-template-columns: 1fr 1fr 1fr;
+}

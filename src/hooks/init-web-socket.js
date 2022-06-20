@@ -44,6 +44,9 @@ const useInitWebSocket = () => {
                 case "room.join":
                     setRoom(args.room);
                     break;
+                case "room.squareselected":
+                    console.log("Recieved square selected");
+                    break;
                 default:
                     break;
             }
@@ -70,7 +73,8 @@ const useInitWebSocket = () => {
         onSignIn: (event) => onClickMethods.onSignIn(event, webSocket),
         onSignOut: (event) => onClickMethods.onSignOut(event, webSocket),
         onCreate: (event) => onClickMethods.onCreate(event, webSocket),
-        onJoin: (event) => onClickMethods.onJoin(event, webSocket)
+        onJoin: (event) => onClickMethods.onJoin(event, webSocket),
+        onSquareSelected: (event) => onClickMethods.onSquareSelected(event, webSocket),
     }
 
     return {player, rooms, room, onClick}; 

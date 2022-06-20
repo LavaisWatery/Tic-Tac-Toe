@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import styles from "./Rooms.module.scss";
 
 const Rooms = ({rooms, onCreate, onJoin}) => {

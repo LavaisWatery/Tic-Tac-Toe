@@ -74,6 +74,9 @@ wss.on('connection', function connection(ws) {
                 sendToClient(ws, "room.join", {room: getRoomFromID(args.roomID)})
                 break;
             }
+            case "room.squareselected":
+                console.log("Recieved square selected");
+                break;
             default:
                 break;
         }
