@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import onClickMethods from "../lib/events/on-click-methods";
+import send from "../lib/server/send";
 
 const ws_url = "ws://192.168.0.16:4949";
 
@@ -24,7 +25,7 @@ const useInitWebSocket = () => {
             switch(method) {
                 case "login": {
                     setPlayer(args);
-                    console.log("Recieved login ");
+                    send(newWebSocket, "room.updaterooms");
                     break;
                 }
                 case "logout": {
@@ -32,14 +33,21 @@ const useInitWebSocket = () => {
                     break;
                 }
                 // When parent player creates room
-                case "room.oncreate": {
-                    setRoom({});
+                case "room.create": {
+                    setRoom(args.room);
                     break;
                 }
+                case "room.oncreate":
+                case "room.updaterooms": 
+                    setRooms(args.rooms);
+                    break;
+                case "room.join":
+                    setRoom(args.room);
+                    break;
                 default:
                     break;
             }
-        }
+        };
 
         newWebSocket.onerror = (event) => {
             console.log(`[🔥] ERROR :\n`, event);
@@ -62,6 +70,7 @@ const useInitWebSocket = () => {
         onSignIn: (event) => onClickMethods.onSignIn(event, webSocket),
         onSignOut: (event) => onClickMethods.onSignOut(event, webSocket),
         onCreate: (event) => onClickMethods.onCreate(event, webSocket),
+        onJoin: (event) => onClickMethods.onJoin(event, webSocket)
     }
 
     return {player, rooms, room, onClick}; 

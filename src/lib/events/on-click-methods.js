@@ -15,13 +15,18 @@ function onSignIn(event, webSocket) {
 }
 
 function onCreate(event, webSocket) {
-    send(webSocket, "room.oncreate");
+    send(webSocket, "room.create");
+}
+
+function onJoin(event, webSocket) {
+    send(webSocket, "room.join", { roomID: event.roomID})
 }
 
 const onClickMethods = {
     onSignIn,
     onSignOut,
-    onCreate
+    onCreate,
+    onJoin
 };
 
 export default onClickMethods;

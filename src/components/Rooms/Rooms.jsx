@@ -1,6 +1,22 @@
+import { useEffect } from "react";
 import styles from "./Rooms.module.scss";
 
-const Rooms = ({rooms, onCreate}) => {
+const Rooms = ({rooms, onCreate, onJoin}) => {
+    var roomElements = [];
+    rooms.forEach((room) => {
+        roomElements.push(
+            <div className={styles.base} key={room.roomID}>
+                <b>test</b>
+                <button
+                    className="outline purple small"
+                    onClick={() => onJoin({roomID: room.roomID})}
+                >
+                    Join
+                </button>
+            </div>
+        )
+    })
+
     return (
         <div className={styles.root}>
             <p>
@@ -8,8 +24,8 @@ const Rooms = ({rooms, onCreate}) => {
                 <br />
                 or create your own.
             </p>
-
             
+            {roomElements}
 
             <button className="purple" onClick={onCreate}>
                 Create room
