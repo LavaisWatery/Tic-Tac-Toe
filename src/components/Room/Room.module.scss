@@ -1,0 +1,5 @@
+.root {
+    grid-template-columns: 1fr 320px;
+    display: grid;
+    height: calc(100vh - 51px);
+}
