@@ -1,19 +1,21 @@
+import { useEffect } from "react";
 import styles from "./GameGrid.module.scss";
 
-const GameGrid = ({props, player, onSquareSelected}) => {
-    var elements = [];
-
-    for(var i = 0; i < 9; i++) {
-        elements.push(
-            <button className={styles.square} onClick={() => onSquareSelected({i})} key={i}>
-                <div className={styles.squareText}>▩</div>
-            </button>
-        )
-    }
+const GameGrid = ({props, room, player, onClick}) => { 
 
     return (
         <div className={styles.row}>
-            {elements}
+            {
+            room.gameBoard.map((key, index) => {
+                return (
+                    <div className={styles.square} onClick={() => onClick.onSquareSelected({roomID: room.roomID, squareIndex: index})} key={index}>
+                        <div className={styles.squareText}>
+                            {key == 0 ? "▩" : "x"}
+                        </div> 
+                    </div>
+                )
+            })}
+
         </div>
     );
 }

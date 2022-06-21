@@ -15,7 +15,7 @@ function App() {
       <main>
         {!player && <SignIn onClick={onClick.onSignIn} />}
         {player && !room && <Rooms rooms={rooms} onCreate={onClick.onCreate} onJoin={onClick.onJoin} />}
-        {player && room && <Room player={player} onSquareSelected={onClick.onSquareSelected} />}
+        {player && room && <Room room={room} player={player} onClick={onClick} />}
       </main>
     </div>
   );

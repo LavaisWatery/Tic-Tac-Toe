@@ -30,6 +30,8 @@ const useInitWebSocket = () => {
                 }
                 case "logout": {
                     setPlayer(null);
+                    setRoom(null);
+                    setRooms([]);
                     break;
                 }
                 // When parent player creates room
@@ -44,8 +46,12 @@ const useInitWebSocket = () => {
                 case "room.join":
                     setRoom(args.room);
                     break;
+                case "room.leave": {
+                    setRoom(null);
+                    break;
+                }
                 case "room.squareselected":
-                    console.log("Recieved square selected");
+                    setRoom(args.room);
                     break;
                 default:
                     break;
@@ -74,7 +80,12 @@ const useInitWebSocket = () => {
         onSignOut: (event) => onClickMethods.onSignOut(event, webSocket),
         onCreate: (event) => onClickMethods.onCreate(event, webSocket),
         onJoin: (event) => onClickMethods.onJoin(event, webSocket),
-        onSquareSelected: (event) => onClickMethods.onSquareSelected(event, webSocket),
+        onLeave: (event) => onClickMethods.onLeave(event, webSocket),
+        onSquareSelected: (event) => {
+            if (room.state == 'waiting') return;
+            
+            onClickMethods.onSquareSelected(event, webSocket)
+        }
     }
 
     return {player, rooms, room, onClick}; 

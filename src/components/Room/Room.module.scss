@@ -3,3 +3,9 @@
     display: grid;
     height: calc(100vh - 51px);
 }
+
+.usersRoot {
+    display: grid;
+    grid-template-rows: 200px 1fr;
+    width: 100%;
+}
