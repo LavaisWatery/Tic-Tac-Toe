@@ -118,8 +118,9 @@ wss.on('connection', function connection(ws) {
         switch(receieved.method) {
             // Recieve from client {login} - This creates a client object with stuffs
             case "login":
-                CONNECTED_CLIENTS.push({player: {nickname: args.nickname, color: args.color, id: ws._ultron.id}, id: ws._ultron.id, ws: ws})
-                sendToClient(ws, "login", args);
+                var arg = {nickname: args.nickname, color: args.color, id: ws._ultron.id};
+                CONNECTED_CLIENTS.push({player: arg, id: ws._ultron.id, ws: ws})
+                sendToClient(ws, "login", arg);
                 break;
             // Recieve from client {logout} - Clear from viewers if room exists, sends to player "logout", this if room exists send the updated room to everyone in room
             case "logout":
@@ -148,7 +149,17 @@ wss.on('connection', function connection(ws) {
 
                 break;
             case "room.challenge": {
-                
+                var room = getRoomFromID(args.roomID);
+
+                if(room == null) return;
+
+                if(room.state == 'waiting') {
+                    room.state = 'playing';
+                    room.opponent = getClientObjectFromConnection(ws).player;
+                    sendToRoom(room, "room.challenge", { room: room });
+                }
+                else {}
+
                 break;
             }
             // Just updates room for player
@@ -161,6 +172,7 @@ wss.on('connection', function connection(ws) {
                 var room = getRoomFromID(args.roomID);
                 var playerOj = getClientObjectFromConnection(ws).player;
 
+                if(room == null) return;
                 if(room.viewers.indexOf(playerOj) == -1) room.viewers.push(playerOj);
 
                 sendToClient(ws, "room.join", {room: room})

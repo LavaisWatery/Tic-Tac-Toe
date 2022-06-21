@@ -26,6 +26,10 @@ function onLeave(event, webSocket) {
     send(webSocket, "room.leave", { roomID: event.roomID });
 }
 
+function onChallenge(event, webSocket) {
+    send(webSocket, "room.challenge", { roomID: event.roomID });
+}
+
 function onSquareSelected(event, webSocket) {
     send(webSocket, "room.squareselected", { roomID: event.roomID, square: event.squareIndex });
 }
@@ -34,6 +38,7 @@ const onClickMethods = {
     onSignIn,
     onSignOut,
     onCreate,
+    onChallenge,
     onJoin,
     onLeave,
     onSquareSelected,

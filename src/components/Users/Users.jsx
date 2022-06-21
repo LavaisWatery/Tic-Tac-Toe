@@ -12,6 +12,16 @@ const Users = ({room}) => {
                     </b>
                 </div>
             </div>
+            {room.opponent && (
+                <div>
+                    <div>Opponent</div>
+                    <div>
+                        <b style={{color: room.opponent.color}}>
+                            {room.opponent.nickname}
+                        </b>
+                    </div>
+                </div>
+            )}
             <div>
                 <div>Viewers</div>
                 {room.viewers.map(viewer => (

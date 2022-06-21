@@ -50,6 +50,10 @@ const useInitWebSocket = () => {
                     setRoom(args.room);
                     break;
                 }
+                case "room.challenge": {
+                    setRoom(args.room);
+                    break;
+                }
                 case "room.leave": {
                     setRoom(null);
                     break;
@@ -88,6 +92,7 @@ const useInitWebSocket = () => {
         onCreate: (event) => onClickMethods.onCreate(event, webSocket),
         onJoin: (event) => onClickMethods.onJoin(event, webSocket),
         onLeave: (event) => onClickMethods.onLeave(event, webSocket),
+        onChallenge: (event) => onClickMethods.onChallenge(event, webSocket),
         onSquareSelected: (event) => {
             if (room.state == 'waiting') return;
             

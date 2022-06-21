@@ -10,6 +10,11 @@ const RoomToolBar = ({room, player, onClick}) => {
                     Leave room
                 </button>
             </div>
+            {room.state == 'waiting' && room.owner.id != player.id && (<div className={styles.base}>
+                <button className="small purple" onClick={() => onClick.onChallenge({roomID: room.roomID})}>
+                    Challenge owner
+                </button>
+            </div>)}
         </header>
     );
 }
