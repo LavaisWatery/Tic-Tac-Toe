@@ -46,8 +46,16 @@ const useInitWebSocket = () => {
                 case "room.join":
                     setRoom(args.room);
                     break;
+                case "room.onjoin": {
+                    setRoom(args.room);
+                    break;
+                }
                 case "room.leave": {
                     setRoom(null);
+                    break;
+                }
+                case "room.onleave": {
+                    setRoom(args.room);
                     break;
                 }
                 case "room.squareselected":

@@ -7,7 +7,7 @@ const server = http.createServer(express);
 const wss = new WebSocket.Server({server});
 
 const CONNECTED_CLIENTS = [];
-const ROOMS = [];
+var ROOMS = [];
 ROOMS_NUM = 0;
 
 function sendToClient(client, method, args) {
@@ -18,9 +18,9 @@ function getNicknameFromConnection(ws) {
     var id = ws._ultron.id;
     var nick = "";
     CONNECTED_CLIENTS.forEach(client => {
-        if(id == client.connectionID) {
+        if(id == client.id) {
             nick = client.nickname;
-            return; // TODO make sure this works
+            return;
         }
     });
     return nick;
@@ -30,7 +30,7 @@ function getConnectionFromID(id) {
     var sock = null;
 
     CONNECTED_CLIENTS.forEach(client => {
-        if(id == client.connectionID) {
+        if(id == client.id) {
             sock = client.ws;
             return;
         }
@@ -56,10 +56,50 @@ function getRoomFromID(id) {
     return room;
 }
 
+function getClientObjectFromConnection(ws) {
+    var id = ws._ultron.id;
+    var oj = null;
+
+    CONNECTED_CLIENTS.forEach(client => {
+        if(id == client.id) {
+            oj = client;
+            return;
+        }
+    })
+
+    return oj;
+}
+
 function sendToRoom(room, method, args) {
-    room.forEach((viewer) => {
-        sendToClient(viewer, method, args);
+    room.viewers.forEach((viewer) => {
+        sendToClient(getConnectionFromID(viewer.id), method, args);
     });
+}
+
+function doesRoomContainViewerWithID(room, id) {
+    var viewer = null;
+
+    room.viewers.forEach((v) => {
+        if(v.id == id) {
+            viewer = v;
+            return;
+        }
+    })
+
+    return viewer;
+}
+
+function getPlayersRoom(playerID) {
+    var room = null;
+
+    ROOMS.forEach(ruum => {
+        if(doesRoomContainViewerWithID(ruum, playerID) != null) {
+            room = ruum;
+            return;
+        }
+    })
+
+    return room;
 }
 
 wss.on('connection', function connection(ws) {
@@ -73,33 +113,37 @@ wss.on('connection', function connection(ws) {
 
         switch(receieved.method) {
             case "login":
-                CONNECTED_CLIENTS.push({nickname: args.nickname, color: args.color, connectionID: ws._ultron.id, ws: ws})
+                CONNECTED_CLIENTS.push({player: {nickname: args.nickname, color: args.color, id: ws._ultron.id}, id: ws._ultron.id, ws: ws})
                 sendToClient(ws, "login", args);
                 break;
             case "logout":
+                var room = getPlayersRoom(getIDFromConnection(ws));
+
                 sendToClient(ws, "logout");
+                sendToRoom(room, "room.onleave", {room: room})
                 break;
             case "room.create":
                 nick = getNicknameFromConnection(ws);
-                ROOMS.push(room = {roomID: ROOMS_NUM, gameBoard: new Array(9).fill(0), owner: getIDFromConnection(ws), ownerName: getNicknameFromConnection(ws), state: "waiting", playersGo: null, viewers: []});
+                ROOMS.push(room = {roomID: ROOMS_NUM, gameBoard: new Array(9).fill(0), owner: getClientObjectFromConnection(ws).player, state: "waiting", playersGo: null, viewers: []});
                 ROOMS_NUM++;
                 room.viewers = [];
-                room.viewers.push(getIDFromConnection(ws))
-                sendToClient(ws, "room.create", {room: room, rooms: ROOMS});
+                room.viewers.push(getClientObjectFromConnection(ws).player);
+                sendToClient(ws, "room.create", {room: room});
                 wss.clients.forEach(client => {
                     sendToClient(client, "room.oncreate", {rooms: ROOMS});
                 })
                 break;
             case "room.updaterooms": {
-                sendToClient(ws, "room.updaterooms", {rooms: ROOMS})
+                sendToClient(ws, "room.updaterooms", {rooms: ROOMS});
                 break;
             }
             case "room.join": {
                 var room = getRoomFromID(args.roomID);
-                var id = getIDFromConnection(ws);
+                var playerOj = getClientObjectFromConnection(ws).player;
 
-                if(room.viewers.indexOf(id) == -1) room.viewers.push(id);
-                sendToClient(ws, "room.join", {room: getRoomFromID(args.roomID)})
+                if(room.viewers.indexOf(playerOj) == -1) room.viewers.push(playerOj);
+                sendToClient(ws, "room.join", {room: room})
+                sendToRoom(room, "room.onjoin", {room: room})
                 break;
             }
             case "room.squareselected":
@@ -111,10 +155,11 @@ wss.on('connection', function connection(ws) {
                 break;
             case "room.leave": {
                 var room = getRoomFromID(args.roomID);
-                var oldViewers = room.viewers.map((viewer) => getConnectionFromID(viewer));
 
-                room.viewers = room.viewers.filter((viewer) => viewer != getIDFromConnection(ws))
+                room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws))
+
                 sendToClient(ws, "room.leave", {room: room});
+                sendToRoom(room, "room.onleave", {room: room})
                 break;
             }
             default:
