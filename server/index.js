@@ -172,9 +172,7 @@ wss.on('connection', function connection(ws) {
         var room = getPlayersRoom(playerID);
 
         if(room != null) {
-            console.log("before: ", room.viewers);
             room.viewers = room.viewers.filter((viewer) => viewer.id != playerID)
-            console.log("after: ", room.viewers);
             sendToRoom(room, "room.onleave", {room: room})
         }
     })
