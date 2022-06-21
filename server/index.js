@@ -72,8 +72,12 @@ function getClientObjectFromConnection(ws) {
 
 function sendToRoom(room, method, args) {
     room.viewers.forEach((viewer) => {
-        sendToClient(getConnectionFromID(viewer.id), method, args);
+        conn = getConnectionFromID(viewer.id);
+        if(conn != null) sendToClient(conn, method, args);
     });
+
+    var ownerConnection = getConnectionFromID(room.owner.id);
+    if(ownerConnection != null) sendToClient(ownerConnection, method, args);
 }
 
 function doesRoomContainViewerWithID(room, id) {
@@ -112,46 +116,64 @@ wss.on('connection', function connection(ws) {
         console.log(`args: `, args)
 
         switch(receieved.method) {
+            // Recieve from client {login} - This creates a client object with stuffs
             case "login":
                 CONNECTED_CLIENTS.push({player: {nickname: args.nickname, color: args.color, id: ws._ultron.id}, id: ws._ultron.id, ws: ws})
                 sendToClient(ws, "login", args);
                 break;
+            // Recieve from client {logout} - Clear from viewers if room exists, sends to player "logout", this if room exists send the updated room to everyone in room
             case "logout":
                 var room = getPlayersRoom(getIDFromConnection(ws));
-
+                
                 sendToClient(ws, "logout");
-                sendToRoom(room, "room.onleave", {room: room})
+
+                if(room != null) {
+                    room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws))
+                    sendToRoom(room, "room.onleave", {room: room})
+                }
+
                 break;
+            // Recieve room.create from player creating room, push new room with roomID, owner, opponent, state, playersGo, viewers, then send new room to player, send ROOMS to all clients
             case "room.create":
                 nick = getNicknameFromConnection(ws);
-                ROOMS.push(room = {roomID: ROOMS_NUM, gameBoard: new Array(9).fill(0), owner: getClientObjectFromConnection(ws).player, state: "waiting", playersGo: null, viewers: []});
+
+                ROOMS.push(room = {roomID: ROOMS_NUM, gameBoard: new Array(9).fill(0), owner: getClientObjectFromConnection(ws).player, opponent: null, state: "waiting", playersGo: null, viewers: []});
                 ROOMS_NUM++;
-                room.viewers = [];
-                room.viewers.push(getClientObjectFromConnection(ws).player);
+
                 sendToClient(ws, "room.create", {room: room});
+
                 wss.clients.forEach(client => {
                     sendToClient(client, "room.oncreate", {rooms: ROOMS});
                 })
+
                 break;
+            case "room.challenge": {
+                
+                break;
+            }
+            // Just updates room for player
             case "room.updaterooms": {
                 sendToClient(ws, "room.updaterooms", {rooms: ROOMS});
                 break;
             }
+            // When a player clicks join, get room from arg data, add to viewers then send to clients
             case "room.join": {
                 var room = getRoomFromID(args.roomID);
                 var playerOj = getClientObjectFromConnection(ws).player;
 
                 if(room.viewers.indexOf(playerOj) == -1) room.viewers.push(playerOj);
+
                 sendToClient(ws, "room.join", {room: room})
                 sendToRoom(room, "room.onjoin", {room: room})
                 break;
             }
+            // When a square is selected, send event to every client in room
             case "room.squareselected":
                 var room = getRoomFromID(args.roomID);
 
                 room.gameBoard[args.square] = 1;
 
-                sendToClient(ws, "room.squareselected", {room: room})
+                sendToRoom(room, "room.squareselected", {room: room})
                 break;
             case "room.leave": {
                 var room = getRoomFromID(args.roomID);
@@ -170,6 +192,10 @@ wss.on('connection', function connection(ws) {
     ws.addEventListener('close', (event) => {
         var playerID = getIDFromConnection(event.target);
         var room = getPlayersRoom(playerID);
+        var clientObject = getClientObjectFromConnection(event.target);
+        var clientIndex = CONNECTED_CLIENTS.indexOf(clientObject);
+
+        CONNECTED_CLIENTS.splice(clientIndex, 1);
 
         if(room != null) {
             room.viewers = room.viewers.filter((viewer) => viewer.id != playerID)

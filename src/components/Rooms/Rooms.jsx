@@ -5,7 +5,7 @@ const Rooms = ({rooms, onCreate, onJoin}) => {
     rooms.forEach((room) => {
         roomElements.push(
             <div className={styles.base} key={room.roomID}>
-                <b>{room.owner.nickname}'s Room</b>
+                <b style={{color: room.owner.color}}>{room.owner.nickname}'s Room</b>
                 <button
                     className="outline purple small"
                     onClick={() => onJoin({roomID: room.roomID})}

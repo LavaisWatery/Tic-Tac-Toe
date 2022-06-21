@@ -79,7 +79,6 @@ const useInitWebSocket = () => {
         };
 
         setWebSocket(newWebSocket);
-        console.log("Set Web Socket to " + newWebSocket);
     }, []);
 
     // Set consts for react handle

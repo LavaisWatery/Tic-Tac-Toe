@@ -7,7 +7,7 @@ const Users = ({room}) => {
             <div>
                 <div>Owner</div>
                 <div>
-                    <b>
+                    <b style={{color: room.owner.color}}>
                         {room.owner.nickname}
                     </b>
                 </div>
@@ -16,7 +16,7 @@ const Users = ({room}) => {
                 <div>Viewers</div>
                 {room.viewers.map(viewer => (
                     <div key={viewer.id}>
-                        <b>
+                        <b style={{color: viewer.color}}>
                             {viewer.nickname}
                         </b>
                     </div>
