@@ -120,6 +120,24 @@ function getPlayersRoom(playerID) {
     return room;
 }
 
+/*
+    Game functions
+*/
+
+function isPlaying(room, playerID) {
+    if(room.owner.id == playerID | room.opponent.id == playerID) return true;
+
+    return false;
+}
+
+function getCharacter(room, playerID) {
+    if(isPlaying(room, playerID)) {
+        return room.owner.id == playerID ? 1 : 2;
+    }
+
+    return -1;
+}
+
 wss.on('connection', function connection(ws) {
     // Set on message
     ws.on('message', function incoming(data) {
@@ -170,6 +188,8 @@ wss.on('connection', function connection(ws) {
                 if(room.state == 'waiting') {
                     room.state = 'playing';
                     room.opponent = getClientObjectFromConnection(ws).player;
+                    // room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws));
+                    
                     sendToRoom(room, "room.challenge", { room: room });
                 }
                 else {}
@@ -196,8 +216,9 @@ wss.on('connection', function connection(ws) {
             // When a square is selected, send event to every client in room
             case "room.squareselected":
                 var room = getRoomFromID(args.roomID);
+                var id = getIDFromConnection(ws);
 
-                room.gameBoard[args.square] = 1;
+                room.gameBoard[args.square] = getCharacter(room, id);
 
                 sendToRoom(room, "room.squareselected", {room: room})
                 break;
@@ -205,7 +226,7 @@ wss.on('connection', function connection(ws) {
                 var room = getRoomFromID(args.roomID);
 
                 if(room.owner.id == ws._ultron.id) { // Owner leaves
-                    
+
                     sendToRoom(room, "room.leave", args);
 
                     return;

@@ -10,7 +10,7 @@ const GameGrid = ({props, room, player, onClick}) => {
                 return (
                     <div className={styles.square} onClick={() => onClick.onSquareSelected({roomID: room.roomID, squareIndex: index})} key={index}>
                         <div className={styles.squareText}>
-                            {key == 0 ? "▩" : "x"}
+                            {key == 0 ? "" : key == 1 ? "X" : "O"}
                         </div> 
                     </div>
                 )

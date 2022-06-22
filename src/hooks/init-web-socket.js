@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import onClickMethods from "../lib/events/on-click-methods";
 import send from "../lib/server/send";
 
-const ws_url = "ws://99.248.50.181:4949";
+const ws_url = "ws://192.168.0.16:4949";
 
 const useInitWebSocket = () => {
     // states
