@@ -80,6 +80,20 @@ function sendToRoom(room, method, args) {
     if(ownerConnection != null) sendToClient(ownerConnection, method, args);
 }
 
+function sendToRoomExcept(except, room, method, args) {
+    room.viewers.forEach((viewer) => {
+        conn = getConnectionFromID(viewer.id);
+        if (conn != except) {
+            if (conn != null) sendToClient(conn, method, args);
+        }
+    });
+
+    if (room.owner.id != except) {
+        var ownerConnection = getConnectionFromID(room.owner.id);
+        if (ownerConnection != null) sendToClient(ownerConnection, method, args);
+    }
+}
+
 function doesRoomContainViewerWithID(room, id) {
     var viewer = null;
 
@@ -190,10 +204,17 @@ wss.on('connection', function connection(ws) {
             case "room.leave": {
                 var room = getRoomFromID(args.roomID);
 
+                if(room.owner.id == ws._ultron.id) { // Owner leaves
+                    
+                    sendToRoom(room, "room.leave", args);
+
+                    return;
+                }
+
                 room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws))
 
                 sendToClient(ws, "room.leave", {room: room});
-                sendToRoom(room, "room.onleave", {room: room})
+                sendToRoomExcept(ws._ultron.id, room, "room.onleave", {room: room})
                 break;
             }
             default:
