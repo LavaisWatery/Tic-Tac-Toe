@@ -9,6 +9,7 @@ const useInitWebSocket = () => {
     const [player, setPlayer] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [room, setRoom] = useState(null);
+    const [logs, setLogs] = useState([]);
 
     const [webSocket, setWebSocket] = useState(null);
 
@@ -31,6 +32,7 @@ const useInitWebSocket = () => {
                 case "logout": {
                     setPlayer(null);
                     setRoom(null);
+                    setLogs([]);
                     setRooms([]);
                     break;
                 }
@@ -56,6 +58,7 @@ const useInitWebSocket = () => {
                 }
                 case "room.leave": {
                     setRoom(null);
+                    setLogs([]);
                     setRooms(args.rooms);
                     break;
                 }
@@ -66,6 +69,9 @@ const useInitWebSocket = () => {
                 case "room.squareselected":
                     setRoom(args.room);
                     break;
+                case "room.message":
+                    setLogs(args.logs);
+                break;
                 default:
                     break;
             }
@@ -101,7 +107,7 @@ const useInitWebSocket = () => {
         }
     }
 
-    return {player, rooms, room, onClick}; 
+    return {player, logs, rooms, room, onClick}; 
 }
 
 export default useInitWebSocket;

@@ -15,7 +15,6 @@ const GameGrid = ({props, room, player, onClick}) => {
                     </div>
                 )
             })}
-
         </div>
     );
 }

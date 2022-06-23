@@ -4,7 +4,7 @@ const WebSocket = require('ws');
 
 const port = 4949;
 const server = http.createServer(express);
-const wss = new WebSocket.Server({server});
+const wss = new WebSocket.Server({ server });
 
 const CONNECTED_CLIENTS = [];
 var ROOMS = [];
@@ -18,7 +18,7 @@ function getNicknameFromConnection(ws) {
     var id = ws._ultron.id;
     var nick = "";
     CONNECTED_CLIENTS.forEach(client => {
-        if(id == client.id) {
+        if (id == client.id) {
             nick = client.nickname;
             return;
         }
@@ -30,7 +30,7 @@ function getConnectionFromID(id) {
     var sock = null;
 
     CONNECTED_CLIENTS.forEach(client => {
-        if(id == client.id) {
+        if (id == client.id) {
             sock = client.ws;
             return;
         }
@@ -47,8 +47,8 @@ function getRoomFromID(id) {
     var room = null;
 
     ROOMS.forEach(item => {
-        if(item.roomID == id) {
-            room = item; 
+        if (item.roomID == id) {
+            room = item;
             return;
         }
     })
@@ -61,7 +61,7 @@ function getClientObjectFromConnection(ws) {
     var oj = null;
 
     CONNECTED_CLIENTS.forEach(client => {
-        if(id == client.id) {
+        if (id == client.id) {
             oj = client;
             return;
         }
@@ -73,11 +73,15 @@ function getClientObjectFromConnection(ws) {
 function sendToRoom(room, method, args) {
     room.viewers.forEach((viewer) => {
         conn = getConnectionFromID(viewer.id);
-        if(conn != null) sendToClient(conn, method, args);
+        if (conn != null) sendToClient(conn, method, args);
     });
 
     var ownerConnection = getConnectionFromID(room.owner.id);
-    if(ownerConnection != null) sendToClient(ownerConnection, method, args);
+    if (ownerConnection != null) sendToClient(ownerConnection, method, args);
+    if (room.opponent != null) {
+        var opponentConnection = getConnectionFromID(room.opponent.id);
+        if (opponentConnection != null) sendToClient(opponentConnection, method, args);
+    }
 }
 
 function sendToRoomExcept(except, room, method, args) {
@@ -92,13 +96,17 @@ function sendToRoomExcept(except, room, method, args) {
         var ownerConnection = getConnectionFromID(room.owner.id);
         if (ownerConnection != null) sendToClient(ownerConnection, method, args);
     }
+    if (room.opponent != null && room.opponent.id != except) {
+        var opponentConnection = getConnectionFromID(room.opponent.id);
+        if (opponentConnection != null) sendToClient(opponentConnection, method, args);
+    }
 }
 
 function doesRoomContainViewerWithID(room, id) {
     var viewer = null;
 
     room.viewers.forEach((v) => {
-        if(v.id == id) {
+        if (v.id == id) {
             viewer = v;
             return;
         }
@@ -111,7 +119,7 @@ function getPlayersRoom(playerID) {
     var room = null;
 
     ROOMS.forEach(ruum => {
-        if(doesRoomContainViewerWithID(ruum, playerID) != null) {
+        if (doesRoomContainViewerWithID(ruum, playerID) != null) {
             room = ruum;
             return;
         }
@@ -125,17 +133,22 @@ function getPlayersRoom(playerID) {
 */
 
 function isPlaying(room, playerID) {
-    if(room.owner.id == playerID | room.opponent.id == playerID) return true;
+    if (room.owner.id == playerID | room.opponent.id == playerID) return true;
 
     return false;
 }
 
 function getCharacter(room, playerID) {
-    if(isPlaying(room, playerID)) {
+    if (isPlaying(room, playerID)) {
         return room.owner.id == playerID ? 1 : 2;
     }
 
     return -1;
+}
+
+function pushMessageToRoom(room, playerObject, message) {
+    room.logs.push({ id: room.logs.length, player: playerObject, message: message });
+    sendToRoom(room, "room.message", { logs: room.logs }); // don't think I need this but \o/
 }
 
 wss.on('connection', function connection(ws) {
@@ -147,22 +160,22 @@ wss.on('connection', function connection(ws) {
 
         console.log(`args: `, args)
 
-        switch(receieved.method) {
+        switch (receieved.method) {
             // Recieve from client {login} - This creates a client object with stuffs
             case "login":
-                var arg = {nickname: args.nickname, color: args.color, id: ws._ultron.id};
-                CONNECTED_CLIENTS.push({player: arg, id: ws._ultron.id, ws: ws})
+                var arg = { nickname: args.nickname, color: args.color, id: ws._ultron.id };
+                CONNECTED_CLIENTS.push({ player: arg, id: ws._ultron.id, ws: ws })
                 sendToClient(ws, "login", arg);
                 break;
             // Recieve from client {logout} - Clear from viewers if room exists, sends to player "logout", this if room exists send the updated room to everyone in room
             case "logout":
                 var room = getPlayersRoom(getIDFromConnection(ws));
-                
+
                 sendToClient(ws, "logout");
 
-                if(room != null) {
+                if (room != null) {
                     room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws))
-                    sendToRoom(room, "room.onleave", {room: room})
+                    sendToRoom(room, "room.onleave", { room: room })
                 }
 
                 break;
@@ -170,35 +183,36 @@ wss.on('connection', function connection(ws) {
             case "room.create":
                 nick = getNicknameFromConnection(ws);
 
-                ROOMS.push(room = {roomID: ROOMS_NUM, gameBoard: new Array(9).fill(0), owner: getClientObjectFromConnection(ws).player, opponent: null, state: "waiting", playersGo: null, viewers: []});
+                ROOMS.push(room = { roomID: ROOMS_NUM, gameBoard: new Array(9).fill(0), owner: getClientObjectFromConnection(ws).player, opponent: null, state: "waiting", playersGo: null, viewers: [], logs: [] });
                 ROOMS_NUM++;
 
-                sendToClient(ws, "room.create", {room: room});
+                sendToClient(ws, "room.create", { room: room });
 
                 wss.clients.forEach(client => {
-                    sendToClient(client, "room.oncreate", {rooms: ROOMS});
+                    sendToClient(client, "room.oncreate", { rooms: ROOMS });
                 })
 
                 break;
             case "room.challenge": {
                 var room = getRoomFromID(args.roomID);
 
-                if(room == null) return;
+                if (room == null) return;
 
-                if(room.state == 'waiting') {
+                if (room.state == 'waiting') {
                     room.state = 'playing';
                     room.opponent = getClientObjectFromConnection(ws).player;
-                    // room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws));
-                    
+                    room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws));
+
                     sendToRoom(room, "room.challenge", { room: room });
+                    pushMessageToRoom(room, getClientObjectFromConnection(ws).player, "I like dicks");
                 }
-                else {}
+                else { }
 
                 break;
             }
             // Just updates room for player
             case "room.updaterooms": {
-                sendToClient(ws, "room.updaterooms", {rooms: ROOMS});
+                sendToClient(ws, "room.updaterooms", { rooms: ROOMS });
                 break;
             }
             // When a player clicks join, get room from arg data, add to viewers then send to clients
@@ -206,11 +220,11 @@ wss.on('connection', function connection(ws) {
                 var room = getRoomFromID(args.roomID);
                 var playerOj = getClientObjectFromConnection(ws).player;
 
-                if(room == null) return;
-                if(room.viewers.indexOf(playerOj) == -1) room.viewers.push(playerOj);
+                if (room == null) return;
+                if (room.viewers.indexOf(playerOj) == -1) room.viewers.push(playerOj);
 
-                sendToClient(ws, "room.join", {room: room})
-                sendToRoom(room, "room.onjoin", {room: room})
+                sendToClient(ws, "room.join", { room: room })
+                sendToRoom(room, "room.onjoin", { room: room })
                 break;
             }
             // When a square is selected, send event to every client in room
@@ -220,29 +234,30 @@ wss.on('connection', function connection(ws) {
 
                 room.gameBoard[args.square] = getCharacter(room, id);
 
-                sendToRoom(room, "room.squareselected", {room: room})
+                sendToRoom(room, "room.squareselected", { room: room })
                 break;
             case "room.leave": {
                 var room = getRoomFromID(args.roomID);
 
-                if(room.owner.id == ws._ultron.id) { // Owner leaves
-
-                    sendToRoom(room, "room.leave", args);
+                if (room.owner.id == ws._ultron.id) { // Owner leaves
+                    var roomIndex = ROOMS.indexOf(room);
+                    ROOMS.splice(roomIndex, 1);
+                    sendToRoom(room, "room.leave", { rooms: ROOMS, roomID: room.roomID });
 
                     return;
                 }
 
                 room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws))
 
-                sendToClient(ws, "room.leave", {room: room});
-                sendToRoomExcept(ws._ultron.id, room, "room.onleave", {room: room})
+                sendToClient(ws, "room.leave", { rooms: ROOMS, roomID: room.roomID });
+                sendToRoomExcept(ws._ultron.id, room, "room.onleave", { room: room })
                 break;
             }
             default:
                 break;
         }
     });
-    
+
     ws.addEventListener('close', (event) => {
         var playerID = getIDFromConnection(event.target);
         var room = getPlayersRoom(playerID);
@@ -251,9 +266,9 @@ wss.on('connection', function connection(ws) {
 
         CONNECTED_CLIENTS.splice(clientIndex, 1);
 
-        if(room != null) {
+        if (room != null) {
             room.viewers = room.viewers.filter((viewer) => viewer.id != playerID)
-            sendToRoom(room, "room.onleave", {room: room})
+            sendToRoom(room, "room.onleave", { room: room })
         }
     })
 });
@@ -261,7 +276,7 @@ wss.on('connection', function connection(ws) {
 /*
     We want to structure room like 
 
-    {
+    { _ROOMS
         roomID: -1
         owner: {_ultron.id} - for tracking
         state: waiting|started
@@ -269,8 +284,14 @@ wss.on('connection', function connection(ws) {
         gameBoard: [] - filled with 9 0's
         viewers: {[_ultron.id]} - people viewing the game
     }
+
+    { _LOG
+        message: ""
+        player: playerObject
+    }
+
 */
 
-server.listen(port, function() {
+server.listen(port, function () {
     console.log("Web Socket Server started on port " + port);
 });
