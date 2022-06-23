@@ -73,7 +73,10 @@ const useInitWebSocket = () => {
                     break;
                 case "room.message":
                     setLogs(args.logs);
-                break;
+                    break;
+                case "room.winner":
+                    setRoom(args.room);
+                    break;
                 default:
                     break;
             }

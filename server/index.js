@@ -11,6 +11,17 @@ const CONNECTED_CLIENTS = [];
 var ROOMS = [];
 ROOMS_NUM = 0;
 
+const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+];
+
 function sendToClient(client, method, args) {
     client.send(JSON.stringify({ type: "request", method, args }));
 }
@@ -160,6 +171,25 @@ function getNextGo(room) {
     return room.owner;
 }
 
+function checkIfGameWinner(room) {
+    for (let a = 0; a < lines.length; a++) {
+        var line = lines[a];
+        var o = line[0];
+        var i = line[1];
+        var t = line[2];
+
+        if (room.gameBoard[o] != 0 && room.gameBoard[o] == room.gameBoard[i] && room.gameBoard[o] == room.gameBoard[t]) {
+            var winner = room.gameBoard[o] == 1 ? room.owner : room.opponent;
+
+            console.log("Winner: ", winner);
+
+            return winner;
+        }
+    }
+
+    return null;
+}
+
 wss.on('connection', function connection(ws) {
     // Set on message
     ws.on('message', function incoming(data) {
@@ -209,7 +239,9 @@ wss.on('connection', function connection(ws) {
 
                 if (room.state == 'waiting') {
                     room.state = 'playing';
+                    room.gameBoard = new Array(9).fill(0);
                     room.opponent = getClientObjectFromConnection(ws).player;
+                    room.logs = [];
                     room.playersGo = room.owner;
                     room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws));
 
@@ -243,6 +275,21 @@ wss.on('connection', function connection(ws) {
                 var id = getIDFromConnection(ws);
 
                 room.gameBoard[args.square] = getCharacter(room, id);
+
+                var winner = checkIfGameWinner(room);
+                if(winner != null) {
+                    room.state = "waiting";
+                    room.viewers.push(room.opponent);
+                    room.opponent = null;
+                    room.logs = []; // clear logs and add winner log to it
+
+                    pushMessageToRoom(room, getClientObjectFromConnection(ws).player, winner.nickname + " has won!!");
+                    console.log(winner);
+                    sendToRoom(room, "room.winner", { room: room, winner: winner });
+
+                    return;
+                }
+
                 room.playersGo = getNextGo(room);
 
                 sendToRoom(room, "room.squareselected", { room: room })
