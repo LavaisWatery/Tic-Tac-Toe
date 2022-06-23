@@ -1,3 +1,4 @@
+var _ = require('lodash');
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -151,6 +152,14 @@ function pushMessageToRoom(room, playerObject, message) {
     sendToRoom(room, "room.message", { logs: room.logs }); // don't think I need this but \o/
 }
 
+function getNextGo(room) {
+    if(room.playersGo != null) {
+        return _.isEqual(room.playersGo, room.owner) ? room.opponent : room.owner;
+    }
+
+    return room.owner;
+}
+
 wss.on('connection', function connection(ws) {
     // Set on message
     ws.on('message', function incoming(data) {
@@ -201,10 +210,11 @@ wss.on('connection', function connection(ws) {
                 if (room.state == 'waiting') {
                     room.state = 'playing';
                     room.opponent = getClientObjectFromConnection(ws).player;
+                    room.playersGo = room.owner;
                     room.viewers = room.viewers.filter((viewer) => viewer.id != getIDFromConnection(ws));
 
                     sendToRoom(room, "room.challenge", { room: room });
-                    pushMessageToRoom(room, getClientObjectFromConnection(ws).player, "I like dicks");
+                    pushMessageToRoom(room, getClientObjectFromConnection(ws).player, "It is now " + room.playersGo.nickname + "'s turn!")
                 }
                 else { }
 
@@ -233,8 +243,10 @@ wss.on('connection', function connection(ws) {
                 var id = getIDFromConnection(ws);
 
                 room.gameBoard[args.square] = getCharacter(room, id);
+                room.playersGo = getNextGo(room);
 
                 sendToRoom(room, "room.squareselected", { room: room })
+                pushMessageToRoom(room, getClientObjectFromConnection(ws).player, "It is now " + room.playersGo.nickname + "'s turn!")
                 break;
             case "room.leave": {
                 var room = getRoomFromID(args.roomID);

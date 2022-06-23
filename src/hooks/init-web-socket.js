@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import onClickMethods from "../lib/events/on-click-methods";
 import send from "../lib/server/send";
+var _ = require('lodash');
 
 const ws_url = "ws://192.168.0.16:4949";
 
@@ -47,6 +48,7 @@ const useInitWebSocket = () => {
                     break;
                 case "room.join":
                     setRoom(args.room);
+                    setLogs(args.room.logs);
                     break;
                 case "room.onjoin": {
                     setRoom(args.room);
@@ -101,7 +103,7 @@ const useInitWebSocket = () => {
         onLeave: (event) => onClickMethods.onLeave(event, webSocket),
         onChallenge: (event) => onClickMethods.onChallenge(event, webSocket),
         onSquareSelected: (event) => {
-            if (room.state == 'waiting') return;
+            if (room.state == 'waiting' || room.playersGo == null || !_.isEqual(room.playersGo, player)) return;
             
             onClickMethods.onSquareSelected(event, webSocket)
         }
