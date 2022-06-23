@@ -114,26 +114,32 @@ function sendToRoomExcept(except, room, method, args) {
     }
 }
 
+function sendToAll(method, args) {
+    CONNECTED_CLIENTS.forEach((client) => {
+        sendToClient(client.ws, method, args);
+    })
+}
+
 function doesRoomContainViewerWithID(room, id) {
     var viewer = null;
-
     room.viewers.forEach((v) => {
         if (v.id == id) {
             viewer = v;
-            return;
         }
     })
+
+    if(room.owner.id == id) viewer = room.owner;
+    if(room.opponent != null && room.opponent.id == id) viewer = room.opponent;
 
     return viewer;
 }
 
 function getPlayersRoom(playerID) {
     var room = null;
-
-    ROOMS.forEach(ruum => {
+    
+    ROOMS.forEach((ruum) => {
         if (doesRoomContainViewerWithID(ruum, playerID) != null) {
             room = ruum;
-            return;
         }
     })
 
@@ -284,7 +290,6 @@ wss.on('connection', function connection(ws) {
                     room.logs = []; // clear logs and add winner log to it
 
                     pushMessageToRoom(room, getClientObjectFromConnection(ws).player, winner.nickname + " has won!!");
-                    console.log(winner);
                     sendToRoom(room, "room.winner", { room: room, winner: winner });
 
                     return;
@@ -302,6 +307,8 @@ wss.on('connection', function connection(ws) {
                     var roomIndex = ROOMS.indexOf(room);
                     ROOMS.splice(roomIndex, 1);
                     sendToRoom(room, "room.leave", { rooms: ROOMS, roomID: room.roomID });
+
+                    sendToAll("room.updaterooms", { rooms: ROOMS } );
 
                     return;
                 }
@@ -326,9 +333,29 @@ wss.on('connection', function connection(ws) {
         CONNECTED_CLIENTS.splice(clientIndex, 1);
 
         if (room != null) {
+            if(room.owner.id == playerID) { // absolute degen ragequit 
+                var roomIndex = ROOMS.indexOf(room);
+
+                ROOMS.splice(roomIndex, 1);
+                sendToRoom(room, "room.leave", { rooms: ROOMS, roomID: room.roomID });
+                sendToAll("room.updaterooms", { rooms: ROOMS } );
+
+                return;
+            }
+            if(room.opponent != null && room.opponent.id == playerID) { // absolute degen ragequit
+                room.state = "waiting";
+                room.opponent = null;
+                room.logs = []; // clear logs and add winner log to it
+
+                pushMessageToRoom(room, clientObject.player, clientObject.player.nickname + " Has ragequit causing " + room.owner.nickname + " to win!");
+                sendToRoom(room, "room.winner", { room: room, winner: room.owner });
+
+                return;
+            }
+
             room.viewers = room.viewers.filter((viewer) => viewer.id != playerID)
             sendToRoom(room, "room.onleave", { room: room })
-        }
+        } 
     })
 });
 
